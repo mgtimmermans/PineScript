@@ -1,0 +1,48 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  This is a Bull Market strategy
+//  Mean Reversion would be much more profitable for a sidways market
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//@version=5
+strategy("Bull_V1", overlay=true, initial_capital = 1000)
+
+//Moving averages
+fastEMA = ta.ema(close, 24)
+fastSMA = ta.sma(close, 24)
+slowEMA = ta.ema(close, 200)
+
+//Average true range for stop loss
+atr = ta.atr(14)
+
+//long conditions
+goLongCondition1 = fastEMA > fastSMA // SMA uses mean and EMA more recent so comparing these shows a trend in our favour
+goLongCondition2 = fastEMA > slowEMA // Overall trend
+
+//exit conditions
+exitCondition1 = fastEMA < fastSMA //trend reversal
+exitCondition2 = close < slowEMA // we use close because markets move fast on crashes
+
+//Vars
+timePeriod = time >= timestamp(syminfo.timezone, 2016, 01, 05, 0, 0)
+inTrade = strategy.position_size > 0
+notInTrade = strategy.position_size <= 0
+
+// Entry logic
+if (goLongCondition1 and goLongCondition2 and timePeriod and notInTrade)
+    strategy.entry("Buy",strategy.long, when=notInTrade)
+    stopLoss = close - atr * 3 // 3xATR for stop loss
+    strategy.exit("exit", "Buy", stop=stopLoss)
+    
+// Exit logic
+if (exitCondition1 and exitCondition2 and inTrade)
+    strategy.close(id="Buy", comment = "Sell")
+    
+// Plots
+var color C_R = #FF7876
+var color C_G = #91FF93
+plot(fastEMA, color = color.blue)
+plot(slowEMA, color = color.yellow)
+bgcolor(notInTrade ? C_R : C_G)
